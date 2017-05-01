@@ -8,3 +8,5 @@ for database, table_dictionnary in MySQLServer.iteritems():
 
         for column in column_list:
             print column
+
+print test
