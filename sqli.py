@@ -241,7 +241,7 @@ def enum_tables(url, payload, bypass, database):
                     table_increment = table_increment + 1
 
             print dump
-            
+
 # --------- Find the numer of columns ----------
 def enum_columns(url, payload, bypass, database, table):
     pass
